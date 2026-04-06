@@ -1,18 +1,18 @@
 package com.example.reactivedata.ui
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.map
 import com.example.reactivedata.data.DataRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
- * UI State Pattern:
+ * UI State Pattern (LiveData version):
  * Represents the complete state of the UI in a single data class.
- * This makes it easier to reason about what the UI should show at any given time.
+ *
+ * GOOD PRACTICE: Using a single data class for UI state promotes "Unidirectional Data Flow" (UDF).
+ * Instead of having multiple independent LiveData objects for items, loading, and errors, 
+ * we bundle them together. This ensures the UI always receives a consistent "snapshot" 
+ * of the screen state.
  */
 data class MainUiState(
     val items: List<String> = emptyList(),
@@ -21,46 +21,39 @@ data class MainUiState(
 
 /**
  * ViewModel:
- * Its purpose is to prepare and manage data for the UI.
- * It survives configuration changes (like screen rotation) because it is tied to the Activity's lifecycle.
+ * Manages data for the UI using LiveData.
  */
 class DataViewModel : ViewModel() {
     /**
      * Get the Singleton instance of the Repository.
+     * 
+     * GOOD PRACTICE: The ViewModel follows the "Dependency Inversion" principle. It doesn't 
+     * care how the data is stored (Network vs. Local Database); it only knows it can 
+     * get it from the Repository.
      */
     private val repository = DataRepository.getInstance()
-    
-    /**
-     * Internal mutable state holder for our UI.
-     */
-    private val _uiState = MutableStateFlow(MainUiState())
 
     /**
-     * Exposed read-only state for the UI to observe.
-     * The UI (Activity/Compose) will collect from this flow to update itself.
+     * LiveData implementation of the UI state.
+     * 
+     * GOOD PRACTICE: LiveData is "Lifecycle-Aware." Unlike standard Observables, it only 
+     * notifies the UI if the Activity/Fragment is in an "Active" state (Started/Resumed). 
+     * This automatically prevents crashes related to updating a UI that is in the background.
+     *
+     * We use the `.map` operator to transform raw data from the Repository into a 
+     * MainUiState. This keeps the UI "logic-less"—it simply displays whatever 
+     * the uiState tells it to.
      */
-    val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
-
-    init {
-        /**
-         * viewModelScope is a coroutine scope tied to the ViewModel's lifecycle.
-         * When the ViewModel is cleared, any work launched in this scope is automatically cancelled.
-         *
-         * Here, we start observing the repository's data flow.
-         */
-        viewModelScope.launch {
-            repository.data.collect { items ->
-                /**
-                 * Whenever the data in the repository changes, we update our UI state.
-                 * copy() allows us to update only specific properties while keeping the rest.
-                 */
-                _uiState.update { it.copy(items = items) }
-            }
-        }
+    val uiState: LiveData<MainUiState> = repository.data.map { items ->
+        MainUiState(items = items)
     }
 
     /**
-     * Passes the user action to the repository.
+     * Event Handling (Input Action):
+     * 
+     * GOOD PRACTICE: User interactions (clicks, text input) are treated as "Actions." 
+     * The UI notifies the ViewModel of the action, and the ViewModel decides how to 
+     * update the data layer.
      */
     fun addString(value: String) {
         if (value.isNotBlank()) {
@@ -69,6 +62,7 @@ class DataViewModel : ViewModel() {
     }
 
     /**
+     * Event Handling (Clear Action):
      * Passes the clear action to the repository.
      */
     fun clearData() {

@@ -1,14 +1,11 @@
 package com.example.reactivedata.data
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 
 /**
- * Repository Pattern:
- * The Repository acts as a mediator between different data sources (Network, Database, or in-memory)
- * and the rest of the app. It provides a clean API for data access.
+ * Repository Pattern (LiveData version):
+ * The Repository acts as a mediator between different data sources.
  *
  * Singleton Pattern:
  * We use a Singleton to ensure there is only one instance of the data throughout the app's life.
@@ -16,26 +13,23 @@ import kotlinx.coroutines.flow.update
 class DataRepository private constructor() {
 
     /**
-     * MutableStateFlow is a state-holder observable flow that emits the current and new state updates.
-     * We keep it private to ensure it can only be modified within this class (Encapsulation).
+     * MutableLiveData is a data holder class that can be observed within a given lifecycle.
+     * We keep it private to ensure it can only be modified within this class.
      */
-    private val _data = MutableStateFlow<List<String>>(emptyList())
+    private val _data = MutableLiveData<List<String>>(emptyList())
 
     /**
-     * We expose the flow as a read-only StateFlow to the outside world.
-     * This prevents external classes from modifying the data directly.
+     * We expose the data as read-only LiveData to the outside world.
      */
-    val data: StateFlow<List<String>> = _data.asStateFlow()
+    val data: LiveData<List<String>> = _data
 
     /**
-     * update {} is a thread-safe way to modify the list.
-     * Because strings and lists are immutable in Kotlin, we create a new list
-     * with the new value added, which triggers an emission in the StateFlow.
+     * Updates the list and notifies observers.
+     * We get the current value, create a new list with the new item, and set the value.
      */
     fun addString(value: String) {
-        _data.update { currentList ->
-            currentList + value
-        }
+        val currentList = _data.value ?: emptyList()
+        _data.value = currentList + value
     }
 
     /**

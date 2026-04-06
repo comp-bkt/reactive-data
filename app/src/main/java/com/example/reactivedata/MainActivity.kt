@@ -8,11 +8,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.reactivedata.ui.DataViewModel
 import com.example.reactivedata.ui.MainContent
+import com.example.reactivedata.ui.MainUiState
 import com.example.reactivedata.ui.theme.ReactiveDataTheme
 
 class MainActivity : ComponentActivity() {
@@ -24,7 +25,11 @@ class MainActivity : ComponentActivity() {
                 val viewModel: DataViewModel = viewModel()
                 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+                    /**
+                     * observeAsState() is used to convert LiveData into a State 
+                     * that Compose can react to.
+                     */
+                    val uiState by viewModel.uiState.observeAsState(MainUiState())
                     
                     MainContent(
                         items = uiState.items,
