@@ -1,0 +1,32 @@
+# Built artifacts
+bin/
+gen/
+out/
+build/
+
+# Gradle
+.gradle/
+gradlew
+gradlew.bat
+gradle/wrapper/gradle-wrapper.jar
+!gradle-wrapper.jar
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+*.iws
+*.ipr
+/captures/
+/local.properties
+/externalNativeBuild/
+/.cxx/
+
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# NDK
+obj/
